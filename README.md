@@ -2,10 +2,11 @@
 
 **Scan your vibe-coded app *and* the AI agent that built it.**
 
-Most security scanners for AI-built apps check the code the agent wrote:
-hardcoded secrets, SQL injection, open database rules. Those matter, and
-vibe-secure checks them too. But there's a second attack surface almost nobody
-scans — **the agent's own configuration**.
+Traditional application scanners focus on the code the agent wrote: hardcoded
+secrets, injection sinks, and insecure database rules. `vibe-secure` checks a
+small, explicit subset of those issues—including a line-scoped heuristic for
+obvious SQL-query concatenation. It also scans a second attack surface: **the
+agent's own configuration**.
 
 In July 2026, Cato AI Labs disclosed **DuneSlide** (CVE-2026-50548 /
 CVE-2026-50549, CVSS 9.8): a prompt injection hidden in content a Cursor agent
@@ -50,9 +51,10 @@ vibe-secure scan --html report.html   # self-contained HTML report
 vibe-secure investigate      # read-only AI investigation and verification
 ```
 
-The deterministic `scan` and `agent` commands are free, offline, and implemented
-with the Python standard library. They exit non-zero on high-severity findings,
-so they drop into CI without a hosted model or API key.
+The deterministic `scan` and `agent` commands are free, require no hosted model
+or API key, and are implemented with the Python standard library. Their local
+checks work offline; optional `npm audit` and `pip-audit` dependency checks may
+use the network. They exit non-zero on high-severity findings, so they drop into CI.
 
 ### Example report
 
@@ -79,7 +81,7 @@ vibe-secure investigate . --model gpt-5.6-sol
 
 `gpt-5.6-sol` is the current documented model ID, not a project-local alias; see
 the [official OpenAI model page](https://developers.openai.com/api/docs/models/gpt-5.6-sol).
-Without a key, use `vibe-secure scan .` for the complete offline ruleset.
+Without a key, use `vibe-secure scan .` for the deterministic ruleset.
 
 The model can list, search, and read bounded portions of repository files. It cannot
 modify files or execute project commands. Repository content is treated as untrusted
@@ -104,8 +106,9 @@ deterministic findings + coverage report
 ```
 
 The model decides which files and hypotheses to investigate, but it cannot invent the
-plan or finish with an unclassified inventoried operation. Next.js routes, server actions,
-Pages API handlers, and Supabase mutations receive explicit authorization classifications;
+plan or finish with an unclassified inventoried operation. Statically discoverable Next.js
+routes, server actions, Pages API handlers, and Supabase mutations receive explicit
+authorization classifications;
 `protected` and `vulnerable` results require source-line evidence. Other stacks receive
 broader investigation tasks, including Firebase rules and Python server sinks.
 
@@ -153,13 +156,29 @@ one review layer rather than proof that an application is secure.
   wildcard CORS, wide-open Firebase/Firestore rules
 - `npm audit` / `pip-audit` when a project is detected
 
-**Authorization investigation (AI-assisted):**
-- Inventories Next.js App Router endpoints, Pages API handlers, and server actions
+**Authorization investigation (AI-assisted, Next.js/Supabase scope):**
+- Inventories statically discoverable Next.js App Router endpoints, Pages API handlers,
+  and server actions
 - Inventories Supabase mutations found outside those route handlers
 - Requires each operation to be classified as protected, vulnerable, not verified,
   or not applicable
 - Supports multi-file evidence across routes, middleware, services, and policy files
-- Reports protected, vulnerable, and unverified operation counts separately
+- Reports protected, vulnerable, and unverified counts for inventoried operations
+
+## Scope & confidence
+
+| Area | Method | Scope | Confidence / limitation |
+|---|---|---|---|
+| Known credential formats | Deterministic regex | Stripe, OpenAI, AWS, GitHub, Google, Slack, private-key headers | High for recognized formats; generic and novel secrets can be missed |
+| Public environment prefixes | Deterministic lexical check | `NEXT_PUBLIC_`, `VITE_`, `REACT_APP_`, `EXPO_PUBLIC_`, `PUBLIC_` | Review signal; naming alone cannot prove runtime exposure |
+| Risky APIs and configuration | Deterministic lexical/structured checks | Listed code sinks, Firebase/Firestore rules, MCP and editor configuration | Finds suspicious presence, not full exploitability or data flow |
+| SQL injection | Deterministic line-scoped heuristic | Obvious request-data concatenation or direct use near a query call | Low-to-medium; not cross-file or multi-line taint analysis |
+| Dependencies | External audit tools | `npm audit` when npm can audit the project; `pip-audit` when installed with `requirements.txt` | Depends on lockfiles, tool availability, connectivity, and advisory data |
+| Authorization design | AI-assisted structured investigation | Inventoried Next.js routes, Pages API handlers, server actions, and Supabase mutations | Evidence-backed but heuristic; inventory and classifications can be incomplete or wrong |
+| Other frameworks/business logic | General investigation tasks only | Firebase and Python receive review tasks, not endpoint-level authorization inventory | No authorization-coverage claim |
+
+“Authorization coverage” in reports means coverage of operations the current inventory
+found—not coverage of every reachable operation or business rule in the application.
 
 ## Why the agent layer matters
 

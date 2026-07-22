@@ -179,7 +179,7 @@ def _render_investigation(state: InvestigationState) -> str:
         ])
     if state.operations:
         coverage = state.authorization_coverage
-        out.extend(["", "## Authorization coverage", "",
+        out.extend(["", "## Inventoried authorization coverage", "",
                     f"Sensitive operations: {coverage['total']} · "
                     f"Protected: {coverage['protected']} · "
                     f"Vulnerable: {coverage['vulnerable']} · "

@@ -36,6 +36,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   an optional, metered API layer that transmits selected redacted source excerpts.
 - Documented investigator prompt-injection containment and residual risk, and
   replaced the premature PyPI install command with the GitHub installation path.
+- Scoped SQL-injection and authorization claims to the implemented heuristics,
+  and added a public scope/confidence matrix for deterministic and AI-assisted checks.
 
 ## [0.2.0]
 
