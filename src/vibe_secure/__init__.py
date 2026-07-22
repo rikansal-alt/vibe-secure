@@ -1,2 +1,2 @@
-"""vibe-secure: scan vibe-coded apps and the agent config that built them."""
+"""vibe-secure: a first security review for solo founders building with AI."""
 __version__ = "0.2.0"

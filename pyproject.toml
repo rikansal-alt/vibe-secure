@@ -5,12 +5,12 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "vibe-secure"
 version = "0.2.0"
-description = "Scan vibe-coded apps and the agent config that built them (incl. DuneSlide-class agent-layer checks)."
+description = "A first security review for solo founders building applications with AI."
 readme = "README.md"
 requires-python = ">=3.9"
 license = "MIT"
 authors = [{ name = "Reecha Kansal" }]
-keywords = ["security", "vibe-coding", "prompt-injection", "mcp", "agent-security", "scanner"]
+keywords = ["security", "solo-founders", "vibe-coding", "prompt-injection", "mcp", "agent-security", "scanner"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Console",

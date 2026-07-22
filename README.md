@@ -1,23 +1,25 @@
 # vibe-secure
 
-**Scan your vibe-coded app *and* the AI agent that built it.**
+**A first security review for solo founders building with AI.**
 
-Traditional application scanners focus on the code the agent wrote: hardcoded
-secrets, injection sinks, and insecure database rules. `vibe-secure` checks a
-small, explicit subset of those issues—including a line-scoped heuristic for
-obvious SQL-query concatenation. It also scans a second attack surface: **the
-agent's own configuration**.
+I built `vibe-secure` after repeatedly reviewing vibe-coded applications for
+solo founders and finding the same high-impact mistakes: exposed secrets,
+unprotected operations, missing ownership checks, open database rules, and
+overly permissive coding-agent configuration.
 
-In July 2026, Cato AI Labs disclosed **DuneSlide** (CVE-2026-50548 /
-CVE-2026-50549, CVSS 9.8): a prompt injection hidden in content a Cursor agent
-read on your behalf — a connected MCP server, a poisoned web result — escaped the
-sandbox and ran code on the developer's machine. No click. And it isn't a one-off:
-prompt injection is architectural, so similar sandbox-escape issues keep surfacing
-across AI coding tools.
+These problems are easy to introduce when an AI-generated application works
+functionally but nobody has reviewed its trust boundaries. Most solo founders
+do not have a security team, and much of the existing security tooling assumes
+more security expertise than they have.
 
-That risk doesn't live in your app source. It lives in your MCP config, your
-auto-run settings, and whether your project teaches the agent any rules at all.
-So vibe-secure scans that layer directly.
+`vibe-secure` turns the first pass of that review into an accessible tool. The
+deterministic scanner catches common mechanical mistakes without an API key.
+The optional investigation agent inventories sensitive operations and examines
+authentication, authorization, ownership checks, and agent configuration using
+bounded, evidence-backed tools.
+
+It is not a penetration test or proof that an application is secure. It is
+designed to catch glaring, preventable issues before a founder ships them.
 
 ```
 $ vibe-secure scan
@@ -182,9 +184,16 @@ found—not coverage of every reachable operation or business rule in the applic
 
 ## Why the agent layer matters
 
-See [`docs/agent-security.md`](docs/agent-security.md) for the threat model:
-why prompt injection is structurally unfixable at the model layer, and why the
-security value has to accrue in the containment layer around the agent instead.
+Application code is only part of the surface. AI coding tools also consume
+repository content, web results, and MCP responses while holding permissions to
+read files or run commands. Cursor sandbox-escape vulnerabilities
+[CVE-2026-50548](https://nvd.nist.gov/vuln/detail/CVE-2026-50548) and
+[CVE-2026-50549](https://nvd.nist.gov/vuln/detail/CVE-2026-50549) affected
+versions before 3.0 and showed why agent containment and approval boundaries
+matter alongside application security.
+
+See [`docs/agent-security.md`](docs/agent-security.md) for the full threat model
+and the limits of model-layer prompt-injection defenses.
 
 ## Development
 
