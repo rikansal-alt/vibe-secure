@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>vibe-secure · demo-app</title>
+<style>
+:root {
+  --bg:#f7f7f8; --card:#fff; --ink:#18181b; --muted:#71717a; --line:#e4e4e7;
+  --good:#22c55e; --warn:#f59e0b; --bad:#ef4444;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg:#0b0b0d; --card:#161619; --ink:#f4f4f5; --muted:#a1a1aa; --line:#27272a; }
+}
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--ink);
+  font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+.wrap { max-width:860px; margin:0 auto; padding:40px 20px 80px; }
+header .brand { font-weight:700; letter-spacing:-.01em; }
+header .brand span { color:var(--muted); font-weight:500; }
+h1 { margin:.2em 0 .1em; font-size:1.9rem; letter-spacing:-.02em; word-break:break-word; }
+.meta { color:var(--muted); font-size:.9rem; margin-bottom:22px; }
+.meta code { background:var(--card); border:1px solid var(--line); border-radius:5px; padding:1px 6px; }
+.verdict { border-radius:12px; padding:14px 18px; font-weight:600; margin:0 0 26px; border:1px solid var(--line); }
+.verdict.good { background:color-mix(in srgb,var(--good) 12%,var(--card)); }
+.verdict.warn { background:color-mix(in srgb,var(--warn) 14%,var(--card)); }
+.verdict.bad  { background:color-mix(in srgb,var(--bad) 14%,var(--card)); }
+.tiles { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:30px; }
+.tile { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px;
+  display:flex; flex-direction:column; gap:4px; }
+.tile .dot { width:10px; height:10px; border-radius:50%; }
+.tile .num { font-size:1.8rem; font-weight:700; line-height:1; }
+.tile .lbl { color:var(--muted); font-size:.82rem; text-transform:uppercase; letter-spacing:.04em; }
+.sev h2 { font-size:1.05rem; margin:30px 0 12px; display:flex; align-items:center; gap:10px;
+  padding-left:12px; border-left:4px solid var(--sev); }
+.sev h2 .count { background:var(--sev); color:#fff; border-radius:20px; font-size:.75rem;
+  padding:2px 9px; font-weight:700; }
+.sev h2 .blurb { color:var(--muted); font-weight:400; font-size:.85rem; margin-left:auto; }
+.findings { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:10px; }
+.finding { background:var(--card); border:1px solid var(--line); border-radius:11px; padding:14px 16px; }
+.badge { display:inline-block; font-size:.72rem; font-weight:600; text-transform:uppercase;
+  letter-spacing:.03em; color:var(--muted); background:color-mix(in srgb,var(--muted) 14%,transparent);
+  border-radius:6px; padding:2px 7px; margin-right:6px; }
+.badge.agent { color:#fff; background:#7c3aed; }
+.finding .msg { margin-top:8px; font-weight:500; }
+.loc { color:var(--muted); font-size:.85rem; margin-top:4px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+.snip { margin:8px 0 0; padding:9px 11px; background:var(--bg); border:1px solid var(--line);
+  border-radius:8px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.82rem;
+  overflow-x:auto; white-space:pre; }
+.notes { margin-top:34px; }
+.notes h3 { font-size:.95rem; }
+.notes ul { color:var(--muted); }
+.agentline { margin-top:26px; padding-top:18px; border-top:1px solid var(--line); color:var(--muted); font-size:.9rem; }
+.agentline strong { color:#7c3aed; }
+footer { margin-top:40px; color:var(--muted); font-size:.8rem; text-align:center; }
+@media (max-width:560px) { .tiles { grid-template-columns:repeat(2,1fr); } }
+</style></head>
+<body><div class="wrap">
+<header><div class="brand">vibe-secure <span>· security report</span></div>
+<h1>demo-app</h1>
+<p class="meta">Stack <code>nextjs, node, supabase</code> &nbsp;·&nbsp; 7 files &nbsp;·&nbsp; 2026-07-22 15:27 UTC</p></header>
+<div class="verdict bad">4 high-severity finding(s) — fix before shipping.</div>
+<div class="tiles"><div class="tile"><span class="dot" style="background:#ef4444"></span><span class="num">4</span><span class="lbl">High</span></div><div class="tile"><span class="dot" style="background:#f59e0b"></span><span class="num">3</span><span class="lbl">Medium</span></div><div class="tile"><span class="dot" style="background:#38bdf8"></span><span class="num">1</span><span class="lbl">Low</span></div><div class="tile"><span class="dot" style="background:#818cf8"></span><span class="num">0</span><span class="lbl">Info</span></div></div>
+<section class="sev"><h2 style="--sev:#ef4444">High <span class="count">4</span><span class="blurb">Fix before shipping</span></h2><ul class="findings"><li class="finding"><span class="badge">agent</span><span class="badge agent">agent-layer</span><div class="msg">MCP server &#x27;web-search&#x27; pulls from a remote URL (insecure http). A poisoned response can inject instructions the agent will act on.</div><div class="loc">.mcp.json</div></li><li class="finding"><span class="badge">agent</span><span class="badge agent">agent-layer</span><div class="msg">MCP server &#x27;web-search&#x27; appears to auto-approve or auto-run actions. Combined with a poisoned response, this is the zero-click path. Require human approval.</div><div class="loc">.mcp.json</div></li><li class="finding"><span class="badge">secrets</span><div class="msg">Server-only secret exposed via a public env prefix (ships to the browser).</div><div class="loc">.env.local:1</div><pre class="snip">NEXT_P********=eyJhbG********</pre></li><li class="finding"><span class="badge">secrets</span><div class="msg">Possible hardcoded secret (Stripe secret key).</div><div class="loc">src/payments.ts:2</div><pre class="snip">export const stripe = new Stripe(&quot;sk_liv********&quot;);</pre></li></ul></section><section class="sev"><h2 style="--sev:#f59e0b">Medium <span class="count">3</span><span class="blurb">Worth a review</span></h2><ul class="findings"><li class="finding"><span class="badge">agent</span><span class="badge agent">agent-layer</span><div class="msg">MCP server &#x27;filesystem&#x27; runs a local command (npx). Its output is trusted by the agent; treat it as an untrusted input path (DuneSlide class).</div><div class="loc">.mcp.json</div></li><li class="finding"><span class="badge">agent</span><span class="badge agent">agent-layer</span><div class="msg">Agent auto-run / approval-skipping setting &#x27;cursor.agent.autoRun&#x27; is enabled. Review whether terminal commands can run without human confirmation.</div><div class="loc">.vscode/settings.json:1</div><pre class="snip">{ &quot;cursor.agent.autoRun&quot;: true, &quot;editor.formatOnSave&quot;: true }</pre></li><li class="finding"><span class="badge">code</span><div class="msg">Risky pattern worth review: XSS sink (dangerouslySetInnerHTML).</div><div class="loc">src/Comment.tsx:2</div><pre class="snip">return &lt;div dangerouslySetInnerHTML={{ __html: html }} /&gt;;</pre></li></ul></section><section class="sev"><h2 style="--sev:#38bdf8">Low <span class="count">1</span><span class="blurb">Cheap hardening</span></h2><ul class="findings"><li class="finding"><span class="badge">agent</span><span class="badge agent">agent-layer</span><div class="msg">No agent rules file found (.cursorrules, AGENTS.md, CLAUDE.md, etc.). A rules file that forbids hardcoded secrets, bans eval, and requires parameterized queries is your cheapest guardrail.</div></li></ul></section>
+<section class="notes"><h3>Notes</h3><ul><li>Not a git repository — history-based checks skipped.</li><li>npm audit could not run (no lockfile or offline).</li></ul></section>
+<p class="agentline">5 of these are <strong>agent-layer</strong> findings — the part other scanners miss.</p>
+<footer>Generated by vibe-secure — it scans your app <em>and</em> the agent that built it.</footer>
+</div></body></html>

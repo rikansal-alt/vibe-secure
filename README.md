@@ -46,12 +46,23 @@ vibe-secure scan             # full: app holes + agent-layer config
 vibe-secure agent            # agent-layer only (MCP, auto-run, rules)
 vibe-secure scan --json      # machine-readable, for CI
 vibe-secure scan --strict    # fail on any finding, not just high severity
+vibe-secure scan --html report.html   # self-contained HTML report
 vibe-secure investigate      # read-only AI investigation and verification
 ```
 
 The deterministic `scan` and `agent` commands are free, offline, and implemented
 with the Python standard library. They exit non-zero on high-severity findings,
 so they drop into CI without a hosted model or API key.
+
+### Example report
+
+[`examples/sample-report.html`](examples/sample-report.html) is a real
+`scan --html` report for a small demo app with a spread of findings — agent-layer
+MCP/auto-run risks, a browser-exposed service-role key, a hardcoded secret
+(redacted), and an XSS sink.
+[**View it rendered**](https://htmlpreview.github.io/?https://github.com/rikansal-alt/vibe-secure/blob/main/examples/sample-report.html)
+(GitHub shows `.html` as source). The report is theme-aware and self-contained —
+no external assets, safe to attach to a CI run.
 
 ### AI investigation
 
