@@ -9,13 +9,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Optional
 
-from .investigation import AgentFinding, InvestigationState, build_investigation
+from .investigation import AgentFinding, EvidenceItem, InvestigationState, build_investigation
 from .report import render_json
 from .scanner import MAX_FILE_BYTES, SECRET_PATTERNS, SKIP_DIRS, SKIP_EXT, scan
 
 # Verified model ID: https://developers.openai.com/api/docs/models/gpt-5.6-sol
 DEFAULT_MODEL = "gpt-5.6-sol"
-MAX_TOOL_CALLS = 30
+MAX_TOOL_CALLS = 200
 MAX_TOOL_OUTPUT = 40_000
 
 SYSTEM_PROMPT = """You are a read-only application security investigator operating inside
@@ -24,7 +24,10 @@ Do not ask to execute code, install packages, access the network, or modify file
 Start from the deterministic scan,
 then complete every required coverage task. Record vulnerabilities with record_finding; it
 validates evidence against the repository. Never claim an unrecorded vulnerability in the final
-answer. Use complete_task even when no vulnerability is found and explain what was checked.
+answer. Classify every authorization operation using record_authorization_assessment, keeping
+authentication, role/permission checks, and ownership/tenant isolation distinct. Use
+not_verified when the available evidence cannot justify protected or vulnerable. Use
+complete_task even when no vulnerability is found and explain what was checked.
 Your final answer must summarize only the validated findings and completed coverage."""
 
 
@@ -86,6 +89,41 @@ TOOLS = [
         },
     },
     {
+        "type": "function", "name": "record_authorization_assessment", "strict": True,
+        "description": "Classify one inventoried operation using validated multi-file evidence.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "operation_id": {"type": "string"},
+                "classification": {"type": "string", "enum": [
+                    "protected", "vulnerable", "not_verified", "not_applicable"]},
+                "authentication": {"type": "string", "enum": [
+                    "verified", "missing", "unknown", "not_applicable"]},
+                "authorization": {"type": "string", "enum": [
+                    "verified", "missing", "unknown", "not_applicable"]},
+                "ownership": {"type": "string", "enum": [
+                    "verified", "missing", "unknown", "not_applicable"]},
+                "rationale": {"type": "string"},
+                "evidence": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "path": {"type": "string"},
+                            "line": {"type": "integer", "minimum": 1},
+                            "text": {"type": "string"},
+                        },
+                        "required": ["path", "line", "text"],
+                        "additionalProperties": False,
+                    },
+                },
+            },
+            "required": ["operation_id", "classification", "authentication", "authorization",
+                         "ownership", "rationale", "evidence"],
+            "additionalProperties": False,
+        },
+    },
+    {
         "type": "function", "name": "complete_task", "strict": True,
         "description": "Mark a required coverage task complete with a concrete coverage summary.",
         "parameters": {
@@ -106,11 +144,16 @@ class InvestigationResult:
     static_high_count: int
     state: InvestigationState
 
+    @property
+    def vulnerable_authorization_count(self) -> int:
+        return self.state.authorization_coverage["vulnerable"]
+
     def to_json(self) -> str:
         return json.dumps({
             "model": self.model,
             "tool_calls": self.tool_calls,
             "static_high_count": self.static_high_count,
+            "vulnerable_authorization_count": self.vulnerable_authorization_count,
             "investigation": self.state.as_dict(),
             "model_summary": self.model_summary,
             "report": self.report,
@@ -134,6 +177,21 @@ def _render_investigation(state: InvestigationState) -> str:
             f"Confidence: {finding.confidence} · Evidence: `{finding.path}:{finding.line}`",
             "", f"> {finding.evidence}", "", f"Remediation: {finding.remediation}", "",
         ])
+    if state.operations:
+        coverage = state.authorization_coverage
+        out.extend(["", "## Authorization coverage", "",
+                    f"Sensitive operations: {coverage['total']} · "
+                    f"Protected: {coverage['protected']} · "
+                    f"Vulnerable: {coverage['vulnerable']} · "
+                    f"Not verified: {coverage['not_verified']} · "
+                    f"Protected coverage: {coverage['percent_verified_protected']}%", ""])
+        for operation in state.operations:
+            out.append(
+                f"- **{operation.classification.upper()}** `{operation.method} "
+                f"{operation.route}` — `{operation.path}:{operation.line}`"
+                f" · authn={operation.authentication}, authz={operation.authorization}, "
+                f"ownership={operation.ownership}"
+                f"{': ' + operation.rationale if operation.rationale else ''}")
     out.extend(["", "## Coverage", ""])
     for task in state.tasks:
         marker = "x" if task.status == "completed" else " "
@@ -296,7 +354,10 @@ def investigate(root: Path, model: str = DEFAULT_MODEL,
             if not state.complete:
                 premature_finals += 1
                 if premature_finals > 2:
-                    incomplete = ", ".join(t.id for t in state.tasks if t.status != "completed")
+                    incomplete_tasks = [t.id for t in state.tasks if t.status != "completed"]
+                    incomplete_ops = [op.id for op in state.operations
+                                      if op.classification == "unknown"]
+                    incomplete = ", ".join(incomplete_tasks + incomplete_ops)
                     raise InvestigationError(f"model did not complete required coverage: {incomplete}")
                 conversation.append({
                     "role": "user",
@@ -330,6 +391,19 @@ def investigate(root: Path, model: str = DEFAULT_MODEL,
                     finding.evidence = actual
                     state.findings.append(finding)
                     result = json.dumps({"ok": True, "finding": len(state.findings)})
+                elif name == "record_authorization_assessment":
+                    evidence = []
+                    for item_evidence in args["evidence"]:
+                        actual = repository.validate_evidence(
+                            item_evidence["path"], int(item_evidence["line"]),
+                            item_evidence["text"])
+                        evidence.append(EvidenceItem(
+                            item_evidence["path"], int(item_evidence["line"]), actual))
+                    state.classify_operation(
+                        args["operation_id"], args["classification"], args["authentication"],
+                        args["authorization"], args["ownership"],
+                        args["rationale"], evidence)
+                    result = json.dumps({"ok": True, "operation": args["operation_id"]})
                 else:
                     result = repository.call(name, args)
             except (InvestigationError, KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:

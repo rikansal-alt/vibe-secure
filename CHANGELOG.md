@@ -14,6 +14,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   Firebase, and Python server sinks.
 - JSON investigation output containing task state, validated findings, tool-call
   counts, and the model's final summary.
+- Deterministic authorization-operation inventory for Next.js routes, Pages API
+  handlers, server actions, and Supabase mutations, with multi-file evidence,
+  per-operation classification, coverage metrics, and CI failure on vulnerabilities.
 
 ### Fixed
 - Agent-layer scan no longer flags `requireApproval` (the *secure* setting) as an

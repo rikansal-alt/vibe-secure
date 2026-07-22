@@ -46,7 +46,7 @@ def cmd_investigate(args) -> int:
         print(f"error: {exc}", file=sys.stderr)
         return 2
     print(result.to_json() if args.json else result.report)
-    return 1 if result.static_high_count else 0
+    return 1 if result.static_high_count or result.vulnerable_authorization_count else 0
 
 
 def build_parser() -> argparse.ArgumentParser:

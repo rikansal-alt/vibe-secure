@@ -93,9 +93,10 @@ deterministic findings + coverage report
 ```
 
 The model decides which files and hypotheses to investigate, but it cannot invent the
-plan, bypass required coverage, or place unsupported claims in the final findings.
-Each repository gets tasks tailored to its detected stack, including web authorization,
-Supabase isolation, Firebase rules, and Python server sinks where relevant.
+plan or finish with an unclassified inventoried operation. Next.js routes, server actions,
+Pages API handlers, and Supabase mutations receive explicit authorization classifications;
+`protected` and `vulnerable` results require source-line evidence. Other stacks receive
+broader investigation tasks, including Firebase rules and Python server sinks.
 
 The JSON report exposes the complete threat model, task states, validated findings,
 tool-call count, and the model's final summary. This makes investigations inspectable
@@ -112,9 +113,10 @@ solved; it assumes the model may be influenced and contains what that influence 
 - File paths are resolved inside the scan root; traversal and sensitive credential
   files are blocked, and recognizable secrets are redacted before model access.
 - Reads, returned data, and total tool calls are bounded.
-- The model cannot choose away required coverage tasks or finish while tasks are pending.
-- Findings must match an exact source line, and the final findings report is rendered
-  from validated state rather than free-form model output.
+- The model cannot finish while required tasks or inventoried authorization operations
+  remain unclassified.
+- Findings and protected/vulnerable authorization classifications must cite text that
+  matches exact source lines; the final report is rendered from structured state.
 
 These controls limit impact; they do not guarantee that a poisoned repository cannot
 cause missed checks, wasted calls, or misleading task summaries. Use the offline scanner
@@ -140,6 +142,14 @@ one review layer rather than proof that an application is secure.
   wildcard CORS, wide-open Firebase/Firestore rules
 - `npm audit` / `pip-audit` when a project is detected
 
+**Authorization investigation (AI-assisted):**
+- Inventories Next.js App Router endpoints, Pages API handlers, and server actions
+- Inventories Supabase mutations found outside those route handlers
+- Requires each operation to be classified as protected, vulnerable, not verified,
+  or not applicable
+- Supports multi-file evidence across routes, middleware, services, and policy files
+- Reports protected, vulnerable, and unverified operation counts separately
+
 ## Why the agent layer matters
 
 See [`docs/agent-security.md`](docs/agent-security.md) for the threat model:
@@ -160,11 +170,14 @@ the `pythonpath` set in `pyproject.toml`).
 
 ## Limitations
 
-This catches the common, mechanical, config-level mistakes. It will not catch
-business-logic flaws, authorization design errors, or a determined attacker. It
-reads static config; it does not execute your agent or your app. Because matching
-is lexical, code that *documents* a risky pattern (a linter, another security
-tool) can still surface a low-value finding. Treat it as the first cheap layer,
-not the last word.
+The deterministic scanner catches common mechanical mistakes in source and
+configuration. The investigation agent also looks for authorization design errors,
+including missing route guards, ownership checks, role boundaries, and database
+policies. Authorization analysis is evidence-based but heuristic: dynamic route
+registration, framework conventions outside the supported inventory, and complex
+business rules can still be missed or remain unverified. The tool does not execute
+your application or coding agent, although dependency checks may invoke `npm audit`
+or `pip-audit`. Treat the result as a fast review layer, not proof that an application
+is secure.
 
 MIT licensed. Issues and PRs welcome.

@@ -3,6 +3,7 @@ import json
 
 import pytest
 
+from vibe_secure.investigation import EvidenceItem, build_investigation
 from vibe_secure.investigator import InvestigationError, RepositoryTools, investigate
 
 
@@ -101,3 +102,55 @@ def test_recorded_evidence_must_match_source_line(tmp_path):
     tools = RepositoryTools(tmp_path)
     with pytest.raises(InvestigationError, match="does not match"):
         tools.validate_evidence("app.py", 1, "eval(user_input)")
+
+
+def test_nextjs_authorization_operations_are_inventoried(tmp_path):
+    (tmp_path / "package.json").write_text(
+        json.dumps({"dependencies": {"next": "15.0.0"}}), encoding="utf-8")
+    route = tmp_path / "app/api/projects/[id]/route.ts"
+    route.parent.mkdir(parents=True)
+    route.write_text(
+        "export async function GET() {}\n"
+        "export async function DELETE() {}\n", encoding="utf-8")
+
+    state = build_investigation(tmp_path)
+    assert [(op.method, op.route) for op in state.operations] == [
+        ("GET", "/api/projects/:id"), ("DELETE", "/api/projects/:id")]
+    assert not state.complete
+    assert state.authorization_coverage["total"] == 2
+
+
+def test_authorization_classification_requires_evidence(tmp_path):
+    (tmp_path / "package.json").write_text(
+        json.dumps({"dependencies": {"next": "15.0.0"}}), encoding="utf-8")
+    route = tmp_path / "app/api/projects/[id]/route.ts"
+    route.parent.mkdir(parents=True)
+    route.write_text("export async function DELETE() {}\n", encoding="utf-8")
+    state = build_investigation(tmp_path)
+
+    with pytest.raises(ValueError, match="requires source evidence"):
+        state.classify_operation(
+            "AUTH-OP-001", "vulnerable", "verified", "verified", "missing",
+            "No ownership check.", [])
+    state.classify_operation(
+        "AUTH-OP-001", "vulnerable", "verified", "verified", "missing",
+        "No ownership check.",
+        [EvidenceItem(str(route.relative_to(tmp_path)), 1,
+                      "export async function DELETE() {}")])
+    assert state.authorization_coverage["vulnerable"] == 1
+    assert state.authorization_coverage["percent_verified_protected"] == 0
+
+
+def test_protected_operation_requires_all_authorization_dimensions(tmp_path):
+    (tmp_path / "package.json").write_text(
+        json.dumps({"dependencies": {"next": "15.0.0"}}), encoding="utf-8")
+    route = tmp_path / "app/api/account/route.ts"
+    route.parent.mkdir(parents=True)
+    route.write_text("export async function GET() {}\n", encoding="utf-8")
+    state = build_investigation(tmp_path)
+    evidence = [EvidenceItem(str(route.relative_to(tmp_path)), 1,
+                             "export async function GET() {}")]
+    with pytest.raises(ValueError, match="requires verified"):
+        state.classify_operation(
+            "AUTH-OP-001", "protected", "verified", "unknown", "unknown",
+            "Session exists but authorization is unclear.", evidence)
