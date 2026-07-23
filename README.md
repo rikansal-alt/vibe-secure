@@ -27,8 +27,8 @@ HIGH  MCP server 'web-search' pulls from an insecure http URL. A poisoned
       response can inject instructions the agent will act on.
 HIGH  MCP server 'filesystem' auto-approves actions. Combined with a poisoned
       response, this is the zero-click path. Require human approval.
-INFO  Cursor config detected. DuneSlide (CVSS 9.8) affected every Cursor
-      before 3.0. Confirm you are on 3.0+.
+INFO  Cursor config detected. DuneSlide (CVE-2026-50548/50549, CVSS 3.1: 9.8)
+      affected every Cursor before 3.0. Confirm you are on 3.0+.
 
 (All 3 findings here are agent-layer — the part other scanners miss.)
 ```

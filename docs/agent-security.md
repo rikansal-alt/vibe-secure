@@ -7,7 +7,7 @@ also only half the surface.
 ## The bug that won't be fixed
 
 In July 2026, Cato AI Labs disclosed DuneSlide: two critical vulnerabilities in
-Cursor (CVE-2026-50548 and CVE-2026-50549, both CVSS 9.8). A prompt injection —
+Cursor (CVE-2026-50548 and CVE-2026-50549, both CVSS 3.1: 9.8). A prompt injection —
 carried not by the user but inside content the agent read on its own, a connected
 MCP server's response or a page returned by a web search — escaped Cursor's
 command sandbox and executed code on the machine. No link to click. No approval

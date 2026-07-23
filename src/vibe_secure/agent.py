@@ -263,7 +263,7 @@ def _check_cursor_advisory(root: Path, findings: list) -> None:
     if (root / ".cursor").exists() or (root / ".cursorrules").is_file():
         findings.append(Finding(
             "INFO", "agent",
-            "Cursor config detected. DuneSlide (CVE-2026-50548/50549, CVSS 9.8) "
+            "Cursor config detected. DuneSlide (CVE-2026-50548/50549, CVSS 3.1: 9.8) "
             "affected every Cursor before 3.0. Confirm you are on 3.0+, and treat "
             "all MCP and web content the agent reads as untrusted input.",
         ))
